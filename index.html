@@ -1,0 +1,1651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Concert App Demo</title>
+    <style>
+        /* --- CSS styles remain largely the same as your previous version --- */
+        /* --- Add styles for the video grid --- */
+        #view-page .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Responsive grid */
+            gap: 10px;
+            width: 100%;
+            height: calc(100vh - 80px); /* Fill space above controls */
+            background-color: #111; /* Dark background for grid */
+            overflow: hidden; /* Prevent scrollbars within grid */
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        #view-page .video-container {
+            position: relative;
+            background-color: #222;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 8px;
+            overflow: hidden; /* Ensure video stays within bounds */
+        }
+
+        #view-page .video-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* Fit video within container, showing all */
+            display: block; /* Remove extra space below video */
+        }
+
+        #view-page .video-container .camera-id-overlay {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            background-color: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-size: 0.8em;
+        }
+
+        /* Other styles (body, login, controls, popups etc.) as before */
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            background-color: #f4f4f4;
+            color: #333;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        body.dark-mode {
+            background-color: #333;
+            color: #f4f4f4;
+        }
+
+        /* Login Screen Styles */
+        #login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+        }
+
+        body.dark-mode #login-container {
+            background-color: #333;
+        }
+
+        .login-box {
+            background-color: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        body.dark-mode .login-box {
+            background-color: #444;
+            color: #f4f4f4;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+        }
+
+        .login-box h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        body.dark-mode .login-box h2 {
+            color: #f4f4f4;
+        }
+
+        .login-box input[type="text"],
+        .login-box input[type="password"] {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: white;
+            color: #333;
+        }
+
+        body.dark-mode .login-box input[type="text"],
+        body.dark-mode .login-box input[type="password"] {
+            background-color: #555;
+            color: #f4f4f4;
+            border-color: #777;
+        }
+
+        .login-box button {
+            padding: 10px 20px;
+            background-color: #FF69B4;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s ease;
+        }
+
+        .login-box button:hover {
+            background-color: #f04fb0;
+        }
+
+        /* App Container Styles */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .page {
+            /* padding: 20px; */ /* Remove padding for view-page */
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+        /* Add padding back for non-view pages */
+        .page:not(#view-page) {
+            padding: 20px;
+        }
+
+
+        /* Top Search Bar */
+        .search-bar {
+            background-color: #e0e0e0;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .search-bar input[type="text"] {
+            flex-grow: 1;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-left: 10px;
+            background-color: white;
+            color: #333;
+        }
+
+        body.dark-mode .search-bar {
+            background-color: #555;
+        }
+
+        body.dark-mode .search-bar input[type="text"] {
+            background-color: #444;
+            color: #f4f4f4;
+            border-color: #777;
+        }
+
+        /* Account Circle */
+        .account-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #FF69B4;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        body.dark-mode .account-circle {
+            background-color: #ff8ac9;
+        }
+
+        /* Category Sections */
+        .category-section {
+            margin-bottom: 20px;
+        }
+
+        .category-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .category-header .see-all {
+            color: #007bff;
+            text-decoration: none;
+            font-size: 0.9em;
+        }
+
+        body.dark-mode .category-header .see-all {
+            color: #64b5f6;
+        }
+
+        .concert-list {
+            display: flex;
+            overflow-x: auto;
+            gap: 10px;
+            padding-bottom: 10px;
+        }
+
+        .concert-box {
+            width: 120px;
+            height: 160px;
+            border-radius: 10px;
+            background-color: #ccc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            flex-shrink: 0;
+            cursor: pointer;
+        }
+
+        body.dark-mode .concert-box {
+            background-color: #666;
+            color: #eee;
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            background-color: #f0f0f0;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-around;
+            border-top: 1px solid #ddd;
+        }
+
+        body.dark-mode .bottom-nav {
+            background-color: #444;
+            border-top-color: #666;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .nav-item.active {
+            color: #FF69B4;
+        }
+
+        body.dark-mode .nav-item.active {
+            color: #ff8ac9;
+        }
+
+        .nav-icon {
+            font-size: 1.5em;
+            margin-bottom: 5px;
+        }
+
+        .nav-text {
+            font-size: 0.8em;
+        }
+
+        /* Device Selection Boxes */
+        .device-selection {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .device-box {
+            width: 100px;
+            height: 100px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            cursor: pointer;
+            background-color: #fff;
+            transition: border-color 0.3s ease; /* Smooth border transition */
+        }
+
+        .device-box.selected {
+            border-color: #28a745; /* Green border when selected */
+            border-width: 4px;
+        }
+
+        body.dark-mode .device-box {
+            background-color: #444;
+            color: #f4f4f4;
+            border-color: #666;
+        }
+
+        body.dark-mode .device-box.selected {
+            border-color: #4CAF50; /* Lighter green in dark mode */
+        }
+
+        /* My Concert Section */
+        .my-concert-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .my-concert-box {
+            background-color: #e8e8e8;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        body.dark-mode .my-concert-box {
+            background-color: #555;
+            color: #eee;
+        }
+
+        /* Placeholder Colors */
+        .color-blue { background-color: #007bff; }
+        .color-purple { background-color: #800080; }
+        .color-green { background-color: #28a745; }
+        .color-red { background-color: #dc3545; }
+        .color-orange { background-color: #ff8c00; }
+        .color-lime { background-color: #aaff00; }
+        .color-pink { background-color: #FF69B4; }
+
+        body.dark-mode .color-blue { background-color: #1e88e5; }
+        body.dark-mode .color-purple { background-color: #9c27b0; }
+        body.dark-mode .color-green { background-color: #43a047; }
+        body.dark-mode .color-red { background-color: #e53935; }
+        body.dark-mode .color-orange { background-color: #f4511e; }
+        body.dark-mode .color-lime { background-color: #c0ca33; }
+        body.dark-mode .color-pink { background-color: #f06292; }
+
+        /* Settings Page Styles */
+        #settings-page h2 {
+            margin-bottom: 15px;
+        }
+
+        #settings-page .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        body.dark-mode #settings-page .setting-item {
+            border-bottom-color: #555;
+        }
+
+        #settings-page .setting-item:last-child {
+            border-bottom: none;
+        }
+
+        #settings-page .admin-button-setting {
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+            margin-top: 15px;
+            text-align: center;
+            border-bottom: none;
+        }
+        body.dark-mode #settings-page .admin-button-setting {
+            border-top-color: #555;
+        }
+
+
+        .toggle-switch {
+            position: relative;
+            width: 40px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #FF69B4;
+        }
+
+        input:focus + .slider {
+            box-shadow: 0 0 1px #FF69B4;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+
+        /* Profile Page Styles */
+        #profile-page {
+            display: none;
+            /* padding: 20px; */ /* Already handled by .page:not(#view-page) */
+        }
+
+        #profile-page .profile-header {
+            text-align: center;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        #profile-page .profile-header h2 {
+            display: inline-block;
+        }
+
+        #profile-page .close-profile-btn {
+            position: absolute;
+            top: 0;
+            right: 0;
+            padding: 8px;
+            cursor: pointer;
+            font-size: 1.2em;
+            color: #666;
+            background: none;
+            border: none;
+        }
+        body.dark-mode #profile-page .close-profile-btn {
+            color: #aaa;
+        }
+
+        #profile-page .profile-picture {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background-color: #ddd;
+            margin: 0 auto 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #666;
+            font-size: 2em;
+            overflow: hidden;
+        }
+        body.dark-mode #profile-page .profile-picture {
+            background-color: #555;
+            color: #ccc;
+        }
+
+
+        #profile-page .profile-info {
+            text-align: center;
+        }
+
+        #profile-page .profile-info p {
+            margin: 8px 0;
+        }
+
+        #profile-page .blurred-password {
+            -webkit-text-security: disc;
+            -moz-text-security: disc;
+            text-security: disc;
+            color: #777;
+        }
+        body.dark-mode #profile-page .blurred-password {
+            color: #aaa;
+        }
+
+        /* Admin Page Styles */
+        #admin-page {
+            display: none;
+            /* padding: 20px; */
+        }
+
+        #admin-page h2 {
+            margin-bottom: 20px;
+        }
+        #admin-page button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        /* Streaming Page Styles */
+        #streaming-page {
+            display: none;
+            /* padding: 20px; */
+            text-align: center;
+        }
+        #streaming-page h2 {
+            margin-bottom: 20px;
+        }
+        #streaming-page button {
+            padding: 15px 30px;
+            font-size: 1.1em;
+            border-radius: 8px;
+            border: none;
+            color: white;
+            cursor: pointer;
+            margin: 10px;
+        }
+        #streaming-page button#start-stream-btn {
+            background-color: #28a745; /* Green for start */
+        }
+        #streaming-page button#stop-stream-btn {
+            background-color: #dc3545; /* Red for stop */
+            display: none; /* Initially hidden */
+        }
+        #streaming-page button#stop-stream-btn.active {
+            display: inline-block; /* Show when streaming */
+        }
+        #streaming-page #local-video-preview {
+            width: 200px;
+            height: 150px;
+            border: 1px solid #ccc;
+            margin: 10px auto;
+            background-color: #222;
+        }
+
+        /* Ready to Watch Section Styles */
+        #ready-to-watch-section {
+            display: none; /* Initially hidden */
+            margin-top: 20px;
+        }
+
+        #ready-to-watch-section .category-header {
+            margin-bottom: 15px;
+        }
+
+        #ready-to-watch-section .concert-list {
+            flex-direction: column; /* Stack concerts vertically */
+            gap: 15px;
+        }
+
+        #ready-to-watch-section .concert-box {
+            width: 100%; /* Full width within the section */
+            height: auto; /* Adjust height to content */
+            padding: 15px;
+            box-sizing: border-box; /* Include padding in width/height */
+            text-align: left; /* Align text to the left */
+            justify-content: flex-start; /* Align content to start horizontally */
+            align-items: center; /* Vertically center content */
+            gap: 10px; /* Spacing between elements in box */
+            background-color: #fff; /* White background for boxes */
+            color: #333; /* Dark text color */
+            border: 1px solid #ddd; /* Light border */
+        }
+        body.dark-mode #ready-to-watch-section .concert-box {
+            background-color: #555;
+            color: #eee;
+            border-color: #777;
+        }
+        #ready-to-watch-section .concert-box:hover {
+            background-color: #f0f0f0; /* Lighter grey on hover */
+        }
+        body.dark-mode #ready-to-watch-section .concert-box:hover {
+            background-color: #666;
+        }
+
+        /* View Page Styles - UPDATED */
+        #view-page {
+            background-color: black; /* Full black background for watch page */
+            display: flex; /* Use flexbox */
+            flex-direction: column; /* Stack video grid and controls vertically */
+            /* justify-content: center; No longer needed, handled by flex */
+            /* align-items: center; No longer needed */
+            padding: 0; /* Remove default padding */
+            height: 100vh; /* Ensure page fills viewport */
+            box-sizing: border-box;
+        }
+
+        /* REMOVE video-background, replace with video-grid */
+        /* #view-page .video-background { ... } */
+
+        #view-page .controls-bar {
+            background-color: #333; /* Dark control bar */
+            padding: 10px 20px;
+            display: flex;
+            justify-content: center; /* Center buttons */
+            gap: 20px; /* Space between buttons */
+            /* position: absolute; No longer absolute */
+            /* bottom: 0; */
+            /* left: 0; */
+            /* right: 0; */
+            height: 80px; /* Fixed height for controls bar */
+            width: 100%; /* Full width */
+            align-items: center; /* Vertically center buttons */
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
+            box-sizing: border-box;
+            flex-shrink: 0; /* Prevent controls from shrinking */
+        }
+        body.dark-mode #view-page .controls-bar {
+            background-color: #444;
+        }
+
+
+        #view-page .control-button {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #FF69B4; /* Pink buttons */
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            font-size: 1.2em;
+            border: none;
+        }
+        body.dark-mode #view-page .control-button {
+            background-color: #ff8ac9;
+        }
+
+        #view-page .control-button#camera-switch-btn { /* Camera switch specific style */
+            background-color: #555; /* Grey for switch camera button */
+            width: auto; /* Adjust width to content */
+            height: auto;
+            padding: 10px 15px;
+            border-radius: 8px; /* More rectangular button */
+            font-size: 0.9em;
+        }
+        body.dark-mode #view-page .control-button#camera-switch-btn {
+            background-color: #666;
+        }
+
+
+        #view-page #camera-list-popup,
+        #view-page #settings-panel {
+            position: absolute;
+            bottom: 80px; /* Position above controls bar */
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #444; /* Dark popup background */
+            color: white;
+            border-radius: 10px;
+            padding: 15px;
+            display: none; /* Hidden by default */
+            z-index: 10; /* Ensure it's above other content */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+            min-width: 150px; /* Ensure popup has some width */
+        }
+        body.dark-mode #view-page #camera-list-popup,
+        body.dark-mode #view-page #settings-panel {
+            background-color: #555;
+        }
+
+
+        #view-page #camera-list-popup.show,
+        #view-page #settings-panel.show {
+            display: block; /* Show popup when .show class is added */
+        }
+
+        #view-page #camera-list-popup ul,
+        #view-page #settings-panel ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        #view-page #camera-list-popup li {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-bottom: 5px;
+            background-color: #555; /* List item background */
+            text-align: center;
+        }
+        body.dark-mode #view-page #camera-list-popup li {
+            background-color: #666;
+        }
+
+        #view-page #camera-list-popup li:hover {
+            background-color: #666; /* Hover background */
+        }
+        body.dark-mode #view-page #camera-list-popup li:hover {
+            background-color: #777;
+        }
+
+        /* Settings Panel Styles */
+        #view-page #settings-panel .volume-control {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        #view-page #settings-panel .volume-label {
+            margin-right: 10px;
+            width: 60px;
+            text-align: right;
+        }
+
+        #view-page #settings-panel input[type="range"] {
+            flex-grow: 1;
+        }
+
+    </style>
+</head>
+<body>
+
+<div id="login-container">
+    <!-- Login form as before -->
+    <div class="login-box">
+        <h2>Login to Concert App</h2>
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="login()">Login</button>
+    </div>
+</div>
+
+<div id="main-app-container" style="display: none;">
+    <div class="app-container">
+        <div class="page" id="home-page">
+            <!-- Home page content as before -->
+            <div class="search-bar">
+                <input type="text" placeholder="Search Concerts">
+                <div class="account-circle" onclick="showPage('profile-page', this)"></div>
+            </div>
+
+            <div class="category-section">
+                <div class="category-header">
+                    Demo
+                </div>
+                <div class="concert-list">
+                    <div class="concert-box color-lime" onclick="showPage('devices-page', this)" style="cursor: pointer;">Watch Demo Concert</div>
+                </div>
+            </div>
+
+            <div class="category-section">
+                <div class="category-header">
+                    Recommend <a href="#" class="see-all">see all</a>
+                </div>
+                <div class="concert-list">
+                    <div class="concert-box color-orange">Concert 16</div>
+                    <div class="concert-box color-red">Concert 17</div>
+                    <div class="concert-box color-green">Concert 18</div>
+                    <div class="concert-box color-purple">Concert 19</div>
+                    <div class="concert-box color-blue">Concert 20</div>
+                </div>
+            </div>
+            <div class="category-section">
+                <div class="category-header">
+                    Concerts <a href="#" class="see-all">see all</a>
+                </div>
+                <div class="concert-list">
+                    <div class="concert-box color-blue">Concert 1</div>
+                    <div class="concert-box color-purple">Concert 2</div>
+                    <div class="concert-box color-pink">Concert 3</div>
+                    <div class="concert-box color-green">Concert 4</div>
+                    <div class="concert-box color-red">Concert 5</div>
+                </div>
+            </div>
+            <div class="category-section">
+                <div class="category-header">
+                    Thai POP <a href="#" class="see-all">see all</a>
+                </div>
+                <div class="concert-list">
+                    <div class="concert-box color-green">Concert 6</div>
+                    <div class="concert-box color-blue">Concert 7</div>
+                    <div class="concert-box color-lime">Concert 8</div>
+                    <div class="concert-box color-orange">Concert 9</div>
+                    <div class="concert-box color-purple">Concert 10</div>
+                </div>
+            </div>
+            <div class="category-section">
+                <div class="category-header">
+                    Rock <a href="#" class="see-all">see all</a>
+                </div>
+                <div class="concert-list">
+                    <div class="concert-box color-red">Concert 11</div>
+                    <div class="concert-box color-orange">Concert 12</div>
+                    <div class="concert-box color-pink">Concert 13</div>
+                    <div class="concert-box color-blue">Concert 14</div>
+                    <div class="concert-box color-green">Concert 15</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="page" id="concert-page" style="display: none;">
+            <!-- concert page content as before -->
+            <div class="category-section">
+                <div class="category-header">
+                    My Concerts
+                </div>
+                <div class="my-concert-list">
+                    <div class="my-concert-box">My Concert 1 - Upcoming</div>
+                    <div class="my-concert-box">My Concert 2 - Processing</div>
+                    <div class="my-concert-box">My Concert 3 - No Streaming Yet</div>
+                </div>
+            </div>
+            <div class="category-section">
+                <div class="category-header">
+                    Concert Library <a href="#" class="see-all">see all</a>
+                </div>
+                <div class="concert-list">
+                    <div class="concert-box color-pink">Library Concert 1</div>
+                    <div class="concert-box color-lime">Library Concert 2</div>
+                    <div class="concert-box color-orange">Library Concert 3</div>
+                    <div class="concert-box color-red">Library Concert 4</div>
+                    <div class="concert-box color-purple">Library Concert 5</div>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 20px;">
+                <button style="padding: 10px 20px; background-color: #FF69B4; color: white; border: none; border-radius: 5px; cursor: pointer;">Purchased</button>
+            </div>
+        </div>
+
+        <div class="page" id="devices-page" style="display: none;">
+            <!-- devices page content as before -->
+            <div class="category-section">
+                <div class="category-header">
+                    Select Device to Watch
+                </div>
+                <div class="device-selection">
+                    <div class="device-box" data-device="computer">
+                        Computer
+                    </div>
+                    <div class="device-box" data-device="vr">
+                        VR
+                    </div>
+                    <div class="device-box" data-device="phone">
+                        Phone
+                    </div>
+                </div>
+            </div>
+            <div id="ready-to-watch-section">
+                <div class="category-header">
+                    Ready to Watch
+                </div>
+                <div class="concert-list">
+                    <!-- Use data-concert-id for linking -->
+                    <div class="concert-box" data-concert-id="demo" onclick="goToViewPage('demo')" style="cursor: pointer;">Demo Concert</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="page" id="settings-page" style="display: none;">
+            <!-- settings page content as before -->
+            <h2>Settings</h2>
+            <div class="setting-item">
+                <span>Dark Mode</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="darkModeToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div id="admin-setting-container" style="display:none;">
+                <div class="setting-item admin-button-setting">
+                    <button onclick="showPage('admin-page', this)" style="padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Go to Admin Page</button>
+                </div>
+            </div>
+            <p>More settings content will go here.</p>
+        </div>
+
+        <div class="page" id="profile-page" style="display: none;">
+            <!-- profile page content as before -->
+            <div class="profile-header">
+                <h2>My Profile</h2>
+                <button class="close-profile-btn" onclick="showPage('home-page', this)">×</button>
+            </div>
+            <div class="profile-picture">
+                👤
+            </div>
+            <div class="profile-info">
+                <p><strong>Username:</strong> <span id="profile-username"></span></p>
+                <p><strong>Password:</strong> <span class="blurred-password">••••••••</span></p>
+                <p>(Password is not editable for demo purposes)</p>
+            </div>
+        </div>
+
+        <div class="page" id="admin-page" style="display: none;">
+            <!-- admin page content mostly as before -->
+            <h2>Admin Page</h2>
+            <button onclick="showConcertSelection()" style="margin-bottom: 10px;">Start Streaming</button>
+            <div id="concert-selection" style="display: none;">
+                <p>Select Concert to Stream:</p>
+                <select id="concert-dropdown">
+                    <option value="demo">Demo Concert</option>
+                    <!-- In real app, populate from a list of concerts -->
+                </select>
+                <button onclick="startStreamingFlow()">Confirm Concert</button>
+            </div>
+
+            <div style="margin-top: 20px;">
+                <h3>Live Cameras (Global)</h3>
+                <p>Number of live cameras: <span id="live-camera-count">0</span></p>
+                <ul id="live-camera-list">
+                    <!-- Live camera names will be listed here -->
+                </ul>
+            </div>
+        </div>
+
+        <div class="page" id="streaming-page" style="display: none;">
+            <!-- streaming page content as before, added video preview -->
+            <h2 id="streaming-page-title">Streaming Page</h2>
+            <video id="local-video-preview" autoplay muted playsinline></video>
+            <button id="start-stream-btn" onclick="startStream()">Start Streaming</button>
+            <button id="stop-stream-btn" onclick="stopStream()">Stop Streaming</button>
+            <p id="stream-status">Streaming is currently: <span id="streaming-state">Stopped</span></p>
+        </div>
+
+        <div class="page" id="view-page" style="display: none;">
+            <!-- Video Grid replaces video background -->
+            <div class="video-grid" id="video-grid">
+                <!-- Video elements will be added here by JS -->
+                <div id="no-streams-message" style="color: white; text-align: center; grid-column: 1 / -1; align-self: center;">Waiting for streams...</div>
+            </div>
+            <!-- Controls bar and popups as before -->
+            <div class="controls-bar">
+                <button class="control-button" id="camera-switch-btn">
+                    <span >Switch Camera</span>
+                </button>
+                <button class="control-button" id="microphone-btn">🎤</button>
+                <button class="control-button" id="settings-btn">⚙️</button>
+                <button class="control-button" id="leave-view-page-btn" onclick="leaveViewPage()">🚪</button> <!-- Updated onclick -->
+            </div>
+            <div id="camera-list-popup">
+                <ul><!-- Camera list items will be generated here --></ul>
+            </div>
+            <div id="settings-panel">
+                <ul>
+                    <li class="volume-control">
+                        <span class="volume-label">Voice</span>
+                        <input type="range" min="0" max="100" value="80">
+                    </li>
+                    <li class="volume-control">
+                        <span class="volume-label">Noise</span>
+                        <input type="range" min="0" max="100" value="10">
+                    </li>
+                    <li class="volume-control">
+                        <span class="volume-label">Speaker</span>
+                        <input type="range" min="0" max="100" value="70">
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <nav class="bottom-nav">
+            <!-- Nav items as before -->
+            <div class="nav-item active" onclick="showPage('home-page', this)">
+                <div class="nav-icon">🏠</div> <div class="nav-text">Home</div>
+            </div>
+            <div class="nav-item" onclick="showPage('concert-page', this)">
+                <div class="nav-icon">🎤</div> <div class="nav-text">Concert</div>
+            </div>
+            <div class="nav-item" onclick="showPage('devices-page', this)">
+                <div class="nav-icon">📱</div> <div class="nav-text">Devices</div>
+            </div>
+            <div class="nav-item" onclick="showPage('settings-page', this)">
+                <div class="nav-icon">⚙️</div> <div class="nav-text">Settings</div>
+            </div>
+        </nav>
+    </div>
+</div>
+
+
+<script>
+    // --- Constants and Variables ---
+    // ** CRITICAL: Replace with your actual WebSocket Tunnel URL **
+    //    If using Ngrok HTTPS: 'wss://your-ngrok-subdomain.ngrok-free.app'
+    //    If using Playit TCP->WS: 'ws://your-playit-address.ply.gg:port'
+    //    For local testing: 'ws://localhost:8080'
+    const WS_URL = 'ws://localhost:8080'; // <--- CHANGE THIS
+
+    const pages = ['home-page', 'concert-page', 'devices-page', 'settings-page', 'profile-page', 'admin-page', 'streaming-page', 'view-page'];
+    const navItems = document.querySelectorAll('.nav-item');
+    const body = document.body;
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    const loginContainer = document.getElementById('login-container');
+    const mainAppContainer = document.getElementById('main-app-container');
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    let currentUsername = "";
+    let myId = null; // Our unique ID from the server
+    let ws = null; // WebSocket connection
+    let localStream = null; // Admin's local camera stream
+    let peerConnections = new Map(); // For users: Map<streamerId, RTCPeerConnection>, For Admins: Map<viewerId, RTCPeerConnection>
+    let currentStreamingConcertId = null; // Admin: which concert are we streaming?
+    let currentWatchingConcertId = null; // User: which concert are we watching?
+
+    let accountCircle = document.querySelector('.account-circle');
+    const profileUsernameDisplay = document.getElementById('profile-username');
+    let isAdminUser = false;
+    const adminSettingContainer = document.getElementById('admin-setting-container');
+    const deviceBoxes = document.querySelectorAll('.device-box');
+    const readyToWatchSection = document.getElementById('ready-to-watch-section');
+    let selectedDeviceBox = null;
+    const concertSelectionDiv = document.getElementById('concert-selection');
+    const concertDropdown = document.getElementById('concert-dropdown');
+    const liveCameraCountSpan = document.getElementById('live-camera-count');
+    const liveCameraListUl = document.getElementById('live-camera-list');
+    const startStreamBtnStreamingPage = document.getElementById('start-stream-btn');
+    const stopStreamBtnStreamingPage = document.getElementById('stop-stream-btn');
+    const streamingStateSpan = document.getElementById('streaming-state');
+    const streamingPageTitle = document.getElementById('streaming-page-title');
+    const localVideoPreview = document.getElementById('local-video-preview');
+    const viewPage = document.getElementById('view-page');
+    const videoGrid = document.getElementById('video-grid');
+    const noStreamsMessage = document.getElementById('no-streams-message');
+    const bottomNav = document.querySelector('.bottom-nav');
+    const cameraSwitchBtn = document.getElementById('camera-switch-btn');
+    const cameraListPopup = document.getElementById('camera-list-popup');
+    const settingsBtnViewPage = document.getElementById('settings-btn');
+    const settingsPanelViewPage = document.getElementById('settings-panel');
+    const cameraListUlPopup = document.querySelector('#view-page #camera-list-popup ul');
+
+    // --- WebRTC Configuration ---
+    const pcConfig = {
+        iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' }
+            // Add TURN servers here if needed for difficult networks
+        ]
+    };
+
+
+    // --- Page Navigation ---
+    function showPage(pageId, clickedNavItem) {
+        pages.forEach(id => {
+            document.getElementById(id).style.display = 'none';
+        });
+        document.getElementById(pageId).style.display = 'block';
+
+        navItems.forEach(item => {
+            item.classList.remove('active');
+        });
+        if (clickedNavItem && navItems.length > 0 && Array.from(navItems).some(item => item.contains(clickedNavItem))) {
+            // Try to find the parent nav-item if a child was clicked
+            let parentNavItem = clickedNavItem;
+            while (parentNavItem && !parentNavItem.classList.contains('nav-item')) {
+                parentNavItem = parentNavItem.parentElement;
+            }
+            if (parentNavItem && parentNavItem.classList.contains('nav-item')) {
+                parentNavItem.classList.add('active');
+            }
+        } else if (clickedNavItem && clickedNavItem.classList?.contains('nav-item')) {
+            // If the clicked item itself is the nav-item
+            clickedNavItem.classList.add('active');
+        }
+
+
+        // Page specific logic
+        cameraListPopup.classList.remove('show'); // Close popups on any page change
+        settingsPanelViewPage.classList.remove('show');
+
+        if (pageId === 'profile-page') {
+            profileUsernameDisplay.textContent = currentUsername;
+            bottomNav.style.display = 'flex';
+        } else if (pageId === 'devices-page') {
+            readyToWatchSection.style.display = 'none';
+            deviceBoxes.forEach(box => box.classList.remove('selected'));
+            selectedDeviceBox = null;
+            bottomNav.style.display = 'flex';
+        } else if (pageId === 'admin-page') {
+            // updateLiveCameraDisplay(); // Now handled by server messages
+            concertSelectionDiv.style.display = 'none';
+            bottomNav.style.display = 'flex';
+        } else if (pageId === 'streaming-page') {
+            // UI reset handled when starting flow
+            bottomNav.style.display = 'flex';
+        } else if (pageId === 'view-page') {
+            bottomNav.style.display = 'none'; // Hide bottom nav on view page
+            // User specific: Tell server we are watching, get streams
+            if (!isAdminUser && currentWatchingConcertId) {
+                sendMessage({ type: 'watch_concert', payload: { concertId: currentWatchingConcertId } });
+            }
+        } else {
+            // For all other standard pages (home, concert)
+            bottomNav.style.display = 'flex';
+            // If leaving view page, tell server we stopped watching
+            if (currentWatchingConcertId) {
+                sendMessage({ type: 'stop_watching', payload: { concertId: currentWatchingConcertId } });
+                cleanupPeerConnections(); // Close connections when leaving view
+                currentWatchingConcertId = null;
+                videoGrid.innerHTML = ''; // Clear video grid
+                noStreamsMessage.style.display = 'block';
+            }
+        }
+    }
+
+    function leaveViewPage() {
+        showPage('devices-page', navItems[2]); // Navigate back to devices, highlight devices tab
+    }
+
+    function goToViewPage(concertId) {
+        if (isAdminUser) {
+            alert("Admins cannot watch streams in this demo.");
+            return;
+        }
+        currentWatchingConcertId = concertId;
+        showPage('view-page', null); // Don't highlight a nav item
+    }
+
+
+    // --- WebSocket Communication ---
+    function connectWebSocket() {
+        if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+            console.log("WebSocket already connected or connecting.");
+            return;
+        }
+
+        console.log(`Attempting to connect to WebSocket: ${WS_URL}`);
+        ws = new WebSocket(WS_URL);
+
+        ws.onopen = () => {
+            console.log('WebSocket connection established');
+            // Potentially request initial state if needed after reconnect
+        };
+
+        ws.onmessage = (event) => {
+            try {
+                const message = JSON.parse(event.data);
+                console.log('Message from server:', message.type, message.payload); // Log message type
+
+                switch (message.type) {
+                    case 'assign_id':
+                        myId = message.payload.id;
+                        console.log(`Assigned ID: ${myId}`);
+                        break;
+                    // --- User specific messages ---
+                    case 'streamer_list':
+                        console.log('Received streamer list:', message.payload.streamerIds);
+                        // Ensure we are on the view page for the correct concert
+                        if (document.getElementById('view-page').style.display === 'block' && message.payload.concertId === currentWatchingConcertId) {
+                            const existingStreamers = new Set(peerConnections.keys());
+                            const serverStreamers = new Set(message.payload.streamerIds);
+
+                            // Connect to new streamers
+                            serverStreamers.forEach(streamerId => {
+                                if (!existingStreamers.has(streamerId)) {
+                                    initiatePeerConnection(streamerId);
+                                }
+                            });
+
+                            // Disconnect from streamers who left
+                            existingStreamers.forEach(streamerId => {
+                                if (!serverStreamers.has(streamerId)) {
+                                    closePeerConnection(streamerId);
+                                }
+                            });
+                            updateNoStreamsMessage();
+                        }
+                        break;
+                    case 'new_streamer':
+                        console.log('New streamer announced:', message.payload.streamerId);
+                        // Ensure we are on the view page for the correct concert
+                        if (document.getElementById('view-page').style.display === 'block' && message.payload.concertId === currentWatchingConcertId) {
+                            if (!peerConnections.has(message.payload.streamerId)) {
+                                initiatePeerConnection(message.payload.streamerId);
+                            }
+                            updateNoStreamsMessage();
+                        }
+                        break;
+                    case 'streamer_left':
+                        console.log('Streamer left:', message.payload.streamerId);
+                        // Ensure we are on the view page for the correct concert
+                        if (document.getElementById('view-page').style.display === 'block' && message.payload.concertId === currentWatchingConcertId) {
+                            closePeerConnection(message.payload.streamerId);
+                            updateNoStreamsMessage();
+                        }
+                        break;
+                    // --- WebRTC Signaling ---
+                    case 'offer': // Admin receives offer from user
+                        if (isAdminUser && localStream) {
+                            handleOffer(message.payload.offer, message.payload.senderId);
+                        }
+                        break;
+                    case 'answer': // User receives answer from admin
+                        if (!isAdminUser) {
+                            handleAnswer(message.payload.answer, message.payload.senderId);
+                        }
+                        break;
+                    case 'candidate': // Both receive candidates
+                        handleCandidate(message.payload.candidate, message.payload.senderId);
+                        break;
+                    default:
+                        console.log("Unknown message type from server:", message.type);
+                }
+            } catch (error) {
+                console.error('Failed to parse server message:', event.data, error);
+            }
+        };
+
+        ws.onerror = (error) => {
+            console.error('WebSocket error:', error);
+            // Optional: Add retry logic here
+        };
+
+        ws.onclose = () => {
+            console.log('WebSocket connection closed');
+            ws = null;
+            // Optional: Attempt to reconnect after a delay
+            // setTimeout(connectWebSocket, 5000);
+        };
+    }
+
+    function sendMessage(message) {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            // console.log('Sending message:', message);
+            console.log('Sending message:', message.type);
+            ws.send(JSON.stringify(message));
+        } else {
+            console.error('WebSocket not connected. Cannot send message:', message.type);
+        }
+    }
+
+    // --- Login/User ---
+    function login() {
+        const username = usernameInput.value;
+        const password = passwordInput.value;
+
+        isAdminUser = (username === "admin" && password === "admin");
+
+        if (isAdminUser) {
+            console.log("Admin login");
+            adminSettingContainer.style.display = 'block';
+        } else {
+            console.log("Normal login");
+            adminSettingContainer.style.display = 'none';
+        }
+
+        currentUsername = username;
+        accountCircle.textContent = getAcronym(username);
+
+        loginContainer.style.display = 'none';
+        mainAppContainer.style.display = 'block';
+        showPage('home-page', navItems[0]);
+
+        // Connect WebSocket after login
+        connectWebSocket();
+    }
+
+    function getAcronym(username) {
+        if (!username) return "";
+        const words = username.split(" ");
+        let acronym = "";
+        for (const word of words) {
+            if (word.length > 0) {
+                acronym += word[0].toUpperCase();
+            }
+        }
+        return acronym;
+    }
+
+    // --- Dark Mode ---
+    darkModeToggle.addEventListener('change', function() {
+        body.classList.toggle('dark-mode');
+    });
+
+    // --- Device Selection ---
+    deviceBoxes.forEach(box => {
+        box.addEventListener('click', function() {
+            if (selectedDeviceBox) {
+                selectedDeviceBox.classList.remove('selected');
+            }
+            this.classList.add('selected');
+            selectedDeviceBox = this;
+            readyToWatchSection.style.display = 'block';
+        });
+    });
+
+    // --- Admin Streaming Flow ---
+    function showConcertSelection() {
+        concertSelectionDiv.style.display = 'block';
+    }
+
+    async function startStreamingFlow() {
+        currentStreamingConcertId = concertDropdown.value;
+        if (!currentStreamingConcertId) {
+            alert("Please select a concert.");
+            return;
+        }
+        streamingPageTitle.textContent = `Streaming Page - ${currentStreamingConcertId === 'demo' ? 'Demo Concert' : currentStreamingConcertId}`;
+
+        // Get camera access BEFORE going to streaming page
+        try {
+            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            localVideoPreview.srcObject = localStream; // Show preview
+            showPage('streaming-page', null); // Navigate only if camera access is successful
+            // Reset UI on streaming page
+            startStreamBtnStreamingPage.style.display = 'inline-block';
+            stopStreamBtnStreamingPage.style.display = 'none';
+            streamingStateSpan.textContent = 'Stopped';
+
+        } catch (error) {
+            console.error('Error accessing media devices:', error);
+            alert('Could not access camera/microphone. Please check permissions.\nError: ' + error.message);
+            currentStreamingConcertId = null; // Reset concert ID if failed
+        }
+    }
+
+    function startStream() {
+        if (!localStream || !currentStreamingConcertId) {
+            alert("Cannot start stream. No local media or concert selected.");
+            return;
+        }
+        console.log(`Admin ${myId} announcing stream for ${currentStreamingConcertId}`);
+        sendMessage({ type: 'announce_stream', payload: { concertId: currentStreamingConcertId } });
+
+        startStreamBtnStreamingPage.style.display = 'none';
+        stopStreamBtnStreamingPage.style.display = 'inline-block';
+        streamingStateSpan.textContent = 'Streaming Live';
+    }
+
+    function stopStream() {
+        if (!currentStreamingConcertId) return; // Shouldn't happen, but safety check
+
+        console.log(`Admin ${myId} stopping stream for ${currentStreamingConcertId}`);
+        sendMessage({ type: 'stop_stream', payload: { concertId: currentStreamingConcertId } });
+
+        // Close all peer connections this admin has with viewers
+        peerConnections.forEach((pc, viewerId) => {
+            console.log(`Closing PC with viewer ${viewerId}`);
+            pc.close();
+        });
+        peerConnections.clear();
+
+        // Stop local media tracks
+        if (localStream) {
+            localStream.getTracks().forEach(track => track.stop());
+            localStream = null;
+            localVideoPreview.srcObject = null;
+        }
+
+        startStreamBtnStreamingPage.style.display = 'inline-block';
+        stopStreamBtnStreamingPage.style.display = 'none';
+        streamingStateSpan.textContent = 'Stopped';
+        currentStreamingConcertId = null; // Reset
+        showPage('admin-page', null); // Go back to admin page
+    }
+
+
+    // --- WebRTC Core Functions ---
+
+    // User initiates connection to a streamer
+    async function initiatePeerConnection(streamerId) {
+        if (peerConnections.has(streamerId)) {
+            console.log(`Already have or initiating PC with ${streamerId}`);
+            return; // Avoid duplicate connections
+        }
+        console.log(`User ${myId} initiating connection to streamer ${streamerId}`);
+
+        const pc = new RTCPeerConnection(pcConfig);
+        peerConnections.set(streamerId, pc);
+
+        pc.onicecandidate = (event) => {
+            if (event.candidate) {
+                sendMessage({
+                    type: 'candidate',
+                    payload: { candidate: event.candidate, targetId: streamerId }
+                });
+            }
+        };
+
+        pc.ontrack = (event) => {
+            console.log(`Track received from ${streamerId}`);
+            addVideoStream(streamerId, event.streams[0]);
+            updateNoStreamsMessage();
+        };
+
+        pc.oniceconnectionstatechange = () => {
+            console.log(`ICE state change for ${streamerId}: ${pc.iceConnectionState}`);
+            if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'closed' || pc.iceConnectionState === 'failed') {
+                // Connection lost or closed, clean up
+                closePeerConnection(streamerId);
+            }
+        };
+
+        try {
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            sendMessage({
+                type: 'offer',
+                payload: { offer: pc.localDescription, targetId: streamerId }
+            });
+        } catch (error) {
+            console.error(`Error creating offer for ${streamerId}:`, error);
+            closePeerConnection(streamerId); // Clean up on error
+        }
+    }
+
+    // Admin handles offer from a user
+    async function handleOffer(offer, viewerId) {
+        if (!localStream) {
+            console.error(`Admin ${myId} received offer from ${viewerId} but has no local stream.`);
+            return;
+        }
+        if (peerConnections.has(viewerId)) {
+            console.log(`Admin already has PC with viewer ${viewerId}, closing old one.`);
+            peerConnections.get(viewerId).close(); // Close existing before creating new
+        }
+
+        console.log(`Admin ${myId} handling offer from viewer ${viewerId}`);
+        const pc = new RTCPeerConnection(pcConfig);
+        peerConnections.set(viewerId, pc); // Store connection by viewer ID
+
+        pc.onicecandidate = (event) => {
+            if (event.candidate) {
+                sendMessage({
+                    type: 'candidate',
+                    payload: { candidate: event.candidate, targetId: viewerId }
+                });
+            }
+        };
+
+        // Add local tracks to send to the viewer
+        localStream.getTracks().forEach(track => {
+            try {
+                pc.addTrack(track, localStream);
+                console.log(`Admin ${myId} added track ${track.kind} for ${viewerId}`);
+            } catch (error) {
+                console.error(`Error adding track ${track.kind} for ${viewerId}:`, error);
+            }
+        });
+
+        pc.oniceconnectionstatechange = () => {
+            console.log(`Admin ICE state change for ${viewerId}: ${pc.iceConnectionState}`);
+            if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'closed' || pc.iceConnectionState === 'failed') {
+                // Connection lost or closed, clean up
+                if (peerConnections.has(viewerId)) {
+                    peerConnections.get(viewerId).close();
+                    peerConnections.delete(viewerId);
+                    console.log(`Admin cleaned up PC for disconnected viewer ${viewerId}`);
+                }
+            }
+        };
+
+
+        try {
+            await pc.setRemoteDescription(new RTCSessionDescription(offer));
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            sendMessage({
+                type: 'answer',
+                payload: { answer: pc.localDescription, targetId: viewerId }
+            });
+            console.log(`Admin ${myId} sent answer to ${viewerId}`);
+        } catch (error) {
+            console.error(`Error handling offer/creating answer for ${viewerId}:`, error);
+            if (peerConnections.has(viewerId)) {
+                peerConnections.get(viewerId).close();
+                peerConnections.delete(viewerId); // Clean up on error
+            }
+        }
+    }
+
+    // User handles answer from admin
+    async function handleAnswer(answer, streamerId) {
+        console.log(`User ${myId} handling answer from streamer ${streamerId}`);
+        const pc = peerConnections.get(streamerId);
+        if (pc && pc.signalingState === 'have-local-offer') { // Check state
+            try {
+                await pc.setRemoteDescription(new RTCSessionDescription(answer));
+                console.log(`User ${myId} set remote description for ${streamerId}`);
+            } catch (error) {
+                console.error(`Error setting remote description for ${streamerId}:`, error);
+                closePeerConnection(streamerId); // Clean up on error
+            }
+        } else {
+            console.warn(`Received answer from ${streamerId} but no matching PC found or in wrong state.`);
+        }
+    }
+
+    // Both handle ICE candidates
+    async function handleCandidate(candidate, peerId) {
+        // Determine if the peer is a streamer (if we are user) or viewer (if we are admin)
+        const pc = peerConnections.get(peerId);
+
+        if (pc) {
+            // console.log(`Handling candidate from ${peerId}`);
+            try {
+                await pc.addIceCandidate(new RTCIceCandidate(candidate));
+            } catch (error) {
+                // Ignore benign errors like candidate already added or state mismatch
+                if (!error.message.includes("Cannot add ICE candidate when state is closed")) {
+                    console.warn(`Error adding ICE candidate from ${peerId}:`, error);
+                }
+            }
+        } else {
+            console.warn(`Received candidate from ${peerId} but no matching PC found.`);
+        }
+    }
+
+    // --- Video Display and Cleanup ---
+    function addVideoStream(streamerId, stream) {
+        console.log(`Adding video stream for ${streamerId}`);
+        let videoContainer = document.getElementById(`video-${streamerId}`);
+        if (!videoContainer) {
+            videoContainer = document.createElement('div');
+            videoContainer.id = `video-${streamerId}`;
+            videoContainer.className = 'video-container';
+
+            const videoElement = document.createElement('video');
+            videoElement.autoplay = true;
+            videoElement.playsInline = true; // Important for mobile
+            videoElement.muted = false; // Allow audio by default for remote streams
+            videoContainer.appendChild(videoElement);
+
+            const overlay = document.createElement('div');
+            overlay.className = 'camera-id-overlay';
+            overlay.textContent = streamerId; // Display the streamer's ID
+            videoContainer.appendChild(overlay);
+
+            videoGrid.appendChild(videoContainer);
+        }
+        const video = videoContainer.querySelector('video');
+        if (video.srcObject !== stream) { // Avoid resetting if already set
+            video.srcObject = stream;
+            video.play().catch(e => console.error("Video play failed:", e)); // Attempt to play
+        }
+        updateNoStreamsMessage(); // Hide "waiting" message
+    }
+
+
+    function removeVideoStream(streamerId) {
+        console.log(`Removing video stream for ${streamerId}`);
+        const videoContainer = document.getElementById(`video-${streamerId}`);
+        if (videoContainer) {
+            const video = videoContainer.querySelector('video');
+            if (video && video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop()); // Stop tracks
+                video.srcObject = null;
+            }
+            videoContainer.remove();
+        }
+        updateNoStreamsMessage(); // Show "waiting" if no streams left
+    }
+
+    function updateNoStreamsMessage() {
+        const videoElements = videoGrid.querySelectorAll('video');
+        if (videoElements.length > 0) {
+            noStreamsMessage.style.display = 'none';
+        } else {
+            noStreamsMessage.style.display = 'block';
+        }
+    }
+
+
+    function closePeerConnection(peerId) {
+        const pc = peerConnections.get(peerId);
+        if (pc) {
+            console.log(`Closing peer connection with ${peerId}`);
+            pc.close();
+            peerConnections.delete(peerId);
+            if (!isAdminUser) { // Only remove video if user
+                removeVideoStream(peerId);
+            }
+        }
+    }
+
+    function cleanupPeerConnections() {
+        console.log("Cleaning up all peer connections.");
+        peerConnections.forEach((pc, peerId) => {
+            closePeerConnection(peerId);
+        });
+        peerConnections.clear();
+        videoGrid.innerHTML = ''; // Clear video grid visuals
+        noStreamsMessage.style.display = 'block'; // Show waiting message
+    }
+
+
+    // --- UI Interactions (View Page) ---
+    cameraSwitchBtn.addEventListener('click', function() {
+        cameraListPopup.classList.toggle('show');
+        settingsPanelViewPage.classList.remove('show');
+        updateCameraListInPopup();
+    });
+
+    settingsBtnViewPage.addEventListener('click', function() {
+        settingsPanelViewPage.classList.toggle('show');
+        cameraListPopup.classList.remove('show');
+    });
+
+    function updateCameraListInPopup() {
+        cameraListUlPopup.innerHTML = ''; // Clear existing list
+        const currentStreamerIds = Array.from(peerConnections.keys()); // Get IDs from established connections
+
+        if (currentStreamerIds.length === 0) {
+            const li = document.createElement('li');
+            li.textContent = "No active cameras";
+            li.style.cursor = 'default';
+            cameraListUlPopup.appendChild(li);
+            return;
+        }
+
+        currentStreamerIds.forEach(streamerId => {
+            const liPopup = document.createElement('li');
+            liPopup.textContent = streamerId; // Or fetch a more descriptive name if available
+            cameraListUlPopup.appendChild(liPopup);
+            liPopup.addEventListener('click', function() {
+                alert(`Switching to ${streamerId}`); // Placeholder - Implement actual switching logic
+                // Logic: Make the selected video larger/focused, maybe mute others?
+                cameraListPopup.classList.remove('show');
+            });
+        });
+    }
+
+    // Initial check
+    updateNoStreamsMessage();
+
+
+</script>
+
+</body>
+</html>
